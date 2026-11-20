@@ -1,4 +1,7 @@
+# =============================================
 # EKS Cluster IAM Role
+# =============================================
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -22,12 +25,18 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEKSClusterPolicy" {
   role       = aws_iam_role.example.name
 }
 
+# =============================================
 # Get Default VPC
+# =============================================
+
 data "aws_vpc" "default" {
   default = true
 }
 
-# Get Public Subnets for Cluster
+# =============================================
+# Get Public Subnets
+# =============================================
+
 data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
@@ -40,7 +49,10 @@ data "aws_subnets" "public" {
   }
 }
 
-# EKS Cluster Provisioning
+# =============================================
+# Create EKS Cluster
+# =============================================
+
 resource "aws_eks_cluster" "example" {
   name     = "EKS_CLUSTER"
   role_arn = aws_iam_role.example.arn
@@ -56,7 +68,10 @@ resource "aws_eks_cluster" "example" {
   ]
 }
 
+# =============================================
 # EKS Worker Node IAM Role
+# =============================================
+
 resource "aws_iam_role" "example1" {
   name = "eks-node-group-cloud"
 
@@ -64,15 +79,20 @@ resource "aws_iam_role" "example1" {
     Statement = [{
       Action = "sts:AssumeRole"
       Effect = "Allow"
+
       Principal = {
         Service = "ec2.amazonaws.com"
       }
     }]
+
     Version = "2012-10-17"
   })
 }
 
+# =============================================
 # Worker Node IAM Policies
+# =============================================
+
 resource "aws_iam_role_policy_attachment" "example-AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.example1.name
@@ -88,7 +108,10 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEC2ContainerRegistryRea
   role       = aws_iam_role.example1.name
 }
 
+# =============================================
 # Create EKS Managed Node Group
+# =============================================
+
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "Node-cloud"
@@ -101,8 +124,10 @@ resource "aws_eks_node_group" "example" {
     min_size     = 2
   }
 
-  instance_types = ["t3.medium"]
+  # EC2 Instance Configuration
+  instance_types = ["t3.small"]
   capacity_type  = "ON_DEMAND"
+  ami_type       = "AL2023_x86_64_STANDARD"
   disk_size      = 20
 
   update_config {
